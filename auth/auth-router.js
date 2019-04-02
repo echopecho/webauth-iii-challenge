@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const Users = require('../users/users-model.js');
+const jwtSecret = require('../config/secrets.js').jwtSecret;
 
 
 router.post('/register', async (req, res) => {
@@ -11,7 +12,6 @@ router.post('/register', async (req, res) => {
   if(user.username && user.password) {
     const hash = bcrypt.hashSync(user.password, 10);
     user.password = hash;
-    console.log(user)
 
     try {
       const newUser = await Users.add(user);
@@ -30,7 +30,9 @@ router.post('/login', async (req, res) => {
   try {
     const user = await Users.findBy({username});
     if(user && bcrypt.compareSync(password, user.password)) {
+      const token = generateToken(user);
       res.status(201).json({
+        token,
         message: `Welcome ${username}`
       })
     }
@@ -38,5 +40,19 @@ router.post('/login', async (req, res) => {
     res.status(500).json({err: "Something went wrong with the server."});
   }
 });
+
+function generateToken(user) {
+  const payload = {
+    subject: user.id,
+    username: user.username,
+    department: user.department
+  };
+
+  const options = {
+    expiresIn: '1d'
+  };
+
+  return jwt.sign(payload, jwtSecret, options);
+}
 
 module.exports = router;
