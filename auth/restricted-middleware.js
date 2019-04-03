@@ -10,6 +10,7 @@ module.exports = (req, res, next) => {
       if(err) {
         res.status(401).json({err: "User not verified"});
       } else {
+        req.decodedJWT = decodedToken;
         next();
       }
     })
